@@ -35,6 +35,12 @@ dependencies:
   postcss:
     specifier: 8.4.31
     version: 8.4.31
+  react:
+    specifier: 19.0.0-rc.0
+    version: 19.0.0-rc.0
+  react-dom:
+    specifier: 19.0.0-rc.0
+    version: 19.0.0-rc.0(react@19.0.0-rc.0)
   tailwindcss:
     specifier: 3.3.3
     version: 3.3.3
