@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { Client } from 'pg';
+import axios from 'axios';
 
  
 const FormSchema = z.object({
@@ -14,8 +16,12 @@ const FormSchema = z.object({
     invalid_type_error: 'Please select a customer.',
   }),
   amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),
-  status: z.enum(['pending', 'paid'], {
-    invalid_type_error: 'Please select an invoice status.',
+  lat: z.coerce.number().gt(0, { message: 'Please enter an amount greater than 0.' }),
+  lon: z.coerce.number().gt(0, { message: 'Please enter an amount greater than 0.' }),
+  startdt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
+  enddt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
+  status: z.enum(['pending', 'ready'], {
+    invalid_type_error: 'Please select a status.',
   }),
   date: z.string(),
 });
@@ -27,6 +33,10 @@ export type State = {
   errors?: {
     customerId?: string[];
     amount?: string[];
+    lat?: string[];
+    lon?: string[];
+    startdt?: string[];
+    enddt?: string[];
     status?: string[];
   };
   message?: string | null;
@@ -37,6 +47,10 @@ export async function createInvoice(prevState: State, formData: FormData) {
   const validatedFields = CreateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'),
+    lat: formData.get('lat'),
+    lon: formData.get('lon'),
+    startdt: formData.get('startdt'),
+    enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
  
@@ -49,15 +63,15 @@ export async function createInvoice(prevState: State, formData: FormData) {
   }
  
   // Prepare data for insertion into the database
-  const { customerId, amount, status } = validatedFields.data;
+  const { customerId, amount, lat, lon, startdt, enddt, status } = validatedFields.data;
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
  
   // Insert data into the database
   try {
     await sql`
-      INSERT INTO invoices (customer_id, amount, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+      INSERT INTO invoices (customer_id, amount, lat, lon, startdt, enddt, status, date)
+      VALUES (${customerId}, ${amountInCents}, ${lat}, ${lon}, ${startdt}, ${enddt}, ${status}, ${date})
     `;
   } catch (error) {
     // If a database error occurs, return a more specific error.
@@ -79,6 +93,10 @@ export async function updateInvoice(
   const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'),
+    lat: formData.get('lat'),
+    lon: formData.get('lon'),
+    startdt: formData.get('startdt'),
+    enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
  
@@ -89,13 +107,13 @@ export async function updateInvoice(
     };
   }
  
-  const { customerId, amount, status } = validatedFields.data;
+  const { customerId, amount, lat, lon, startdt, enddt, status } = validatedFields.data;
   const amountInCents = amount * 100;
  
   try {
     await sql`
       UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      SET customer_id = ${customerId}, amount = ${amountInCents}, lat = ${lat}, lon = ${lon}, startdt = ${startdt}, enddt = ${enddt}, status = ${status}
       WHERE id = ${id}
     `;
   } catch (error) {
@@ -135,4 +153,54 @@ export async function authenticate(
     }
     throw error;
   }
+}
+
+
+
+
+// NEW
+
+
+
+export async function takeInputs(req: any) {
+
+  const { lat, lon, startYear, endYear } = req;
+
+  const nasaUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?start=${startYear}&end=${endYear}&latitude=${lat}&longitude=${lon}&community=re&parameters=T2M%2CRH2M%2CWS2M%2CPS%2CALLSKY_SFC_SW_DWN%2CPRECTOTCORR&format=json&header=true&time-standard=lst`;
+
+  try {
+    const response = await axios.get(nasaUrl);
+    const data = response.data.properties.parameter;
+    console.log(data);
+
+    // Process data
+    const processedData = processData(data);
+    return processedData;
+  } catch (error) {
+    console.error('Error fetching data from NASA Power API:', error);
+    }
+
+}
+
+export async function processData(data: any) {
+  const outvars = ['TBOT', 'RH', 'WIND', 'PSRF', 'FSDS', 'PRECTmms'];
+  const invars = ['T2M', 'RH2M', 'WS2M', 'PS', 'ALLSKY_SFC_SW_DWN', 'PRECTOTCORR'];
+  const conversion = [1, 1, 1, 1000, 1 / (0.48 * 4.6), 1];
+
+  const processedData = {};
+
+  for (let i = 0; i < outvars.length; i++) {
+    const outvar = outvars[i];
+    const invar = invars[i];
+    const conversionFactor = conversion[i];
+
+    if (data[invar]) {
+      processedData[outvar] = Object.values(data[invar]).map(value => value * conversionFactor);
+    } else {
+      console.warn(`Data for ${invar} is missing`);
+      processedData[outvar] = [];
+    }
+  }
+
+  return processedData;
 }

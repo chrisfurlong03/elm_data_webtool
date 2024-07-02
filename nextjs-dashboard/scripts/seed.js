@@ -56,6 +56,10 @@ async function seedInvoices(client) {
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     customer_id UUID NOT NULL,
     amount INT NOT NULL,
+    lat INT NOT NULL,
+    lon INT NOT NULL,
+    start INT NOT NULL,
+    end INT NOT NULL,
     status VARCHAR(255) NOT NULL,
     date DATE NOT NULL
   );
@@ -67,8 +71,8 @@ async function seedInvoices(client) {
     const insertedInvoices = await Promise.all(
       invoices.map(
         (invoice) => client.sql`
-        INSERT INTO invoices (customer_id, amount, status, date)
-        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
+        INSERT INTO invoices (customer_id, amount, lat, lon, start, end, status, date)
+        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.lat}, ${invoice.lon}, ${invoice.start}, ${invoice.end}, ${invoice.status}, ${invoice.date})
         ON CONFLICT (id) DO NOTHING;
       `,
       ),
