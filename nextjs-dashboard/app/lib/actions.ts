@@ -246,7 +246,7 @@ async function csvToJson(stream: Readable): Promise<Record<string, Record<string
       result[header] = {};
   });
 
-  dataLines.forEach(line => {
+  dataLines.forEach(line => { 
       const values = line.split(",");
       const year = values[0];
       const yday = values[1];
