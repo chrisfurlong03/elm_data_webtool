@@ -3,7 +3,9 @@ import {
   CustomerField,
   CustomersTableType,
   InvoiceForm,
+  InputJobForm,
   InvoicesTable,
+  InputJobsTable,
   LatestInvoiceRaw,
   User,
   Revenue,
@@ -164,6 +166,8 @@ export async function fetchInvoiceById(id: string) {
       ...invoice,
       // Convert amount from cents to dollars
       amount: invoice.amount / 100,
+      lat: invoice.lat / 100, 
+      lon: invoice.lon / 100
     }));
 
     return invoice[0];
@@ -231,5 +235,91 @@ export async function getUser(email: string) {
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
+  }
+}
+
+
+
+// new for inputjobs
+
+export async function fetchFilteredInputJobs(
+  query: string,
+  currentPage: number,
+) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    const inputjobs = await sql<InputJobsTable>`
+      SELECT
+        inputjobs.id,
+        inputjobs.date,
+        inputjobs.status,
+        customers.name,
+        customers.email,
+        customers.image_url
+      FROM inputjobs
+      JOIN customers ON inputjobs.customer_id = customers.id
+      WHERE
+        customers.name ILIKE ${`%${query}%`} OR
+        customers.email ILIKE ${`%${query}%`} OR
+        inputjobs.date::text ILIKE ${`%${query}%`} OR
+        inputjobs.status ILIKE ${`%${query}%`}
+      ORDER BY inputjobs.date DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return inputjobs.rows;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch input jobs.');
+  }
+}
+
+export async function fetchInputJobsPages(query: string) {
+  try {
+    const count = await sql`SELECT COUNT(*)
+    FROM inputjobs
+    JOIN customers ON inputjobs.customer_id = customers.id
+    WHERE
+      customers.name ILIKE ${`%${query}%`} OR
+      customers.email ILIKE ${`%${query}%`} OR
+      inputjobs.date::text ILIKE ${`%${query}%`} OR
+      inputjobs.status ILIKE ${`%${query}%`}
+  `;
+
+    const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch total number of input jobs.');
+  }
+}
+
+export async function fetchInputJobById(id: string) {
+  try {
+    const data = await sql<InputJobForm>`
+      SELECT
+        inputjobs.id,
+        inputjobs.customer_id,
+        inputjobs.lat, 
+        inputjobs.lon,
+        inputjobs.startdt, 
+        inputjobs.enddt,
+        inputjobs.status
+      FROM inputjobs
+      WHERE inputjobs.id = ${id};
+    `;
+
+    const inputjobs = data.rows.map((inputjobs) => ({
+      ...inputjobs,
+      // Convert amount from cents to dollars
+      lat: inputjobs.lat / 100, 
+      lon: inputjobs.lon / 100
+    }));
+
+    return inputjobs[0];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch inputjob.');
   }
 }

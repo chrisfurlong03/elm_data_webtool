@@ -30,6 +30,20 @@ export type Invoice = {
   status: 'pending' | 'ready';
 };
 
+export type InputJob = {
+  id: string;
+  customer_id: string;
+  lat: number;
+  lon: number;
+  data: string;
+  startdt: number;
+  enddt: number;
+  date: string;
+  // In TypeScript, this is called a string union type.
+  // It means that the "status" property can only be one of the two strings: 'pending' or 'paid'.
+  status: 'pending' | 'ready';
+};
+
 export type Revenue = {
   month: string;
   revenue: number;
@@ -56,6 +70,16 @@ export type InvoicesTable = {
   image_url: string;
   date: string;
   amount: number;
+  status: 'pending' | 'ready';
+};
+
+export type InputJobsTable = {
+  id: string;
+  customer_id: string;
+  name: string;
+  email: string;
+  image_url: string;
+  date: string;
   status: 'pending' | 'ready';
 };
 
@@ -92,5 +116,16 @@ export type InvoiceForm = {
   lon: number;
   startdt: number;
   enddt: number;
+  status: 'pending' | 'ready';
+};
+
+export type InputJobForm = {
+  id: string;
+  customer_id: string;
+  lat: number;
+  lon: number;
+  startdt: number;
+  enddt: number;
+  data: string;
   status: 'pending' | 'ready';
 };
