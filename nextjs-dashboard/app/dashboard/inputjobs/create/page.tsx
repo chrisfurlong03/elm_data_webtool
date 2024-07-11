@@ -1,4 +1,4 @@
-import Form from '@/app/ui/invoices/create-form';
+import Form from '@/app/ui/inputjobs/create-form';
 import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
 import { fetchCustomers } from '@/app/lib/data';
  
@@ -9,10 +9,10 @@ export default async function Page() {
     <main>
       <Breadcrumbs
         breadcrumbs={[
-          { label: 'Files', href: '/dashboard/invoices' },
+          { label: 'Files', href: '/dashboard/inputjobs' },
           {
             label: 'Create File',
-            href: '/dashboard/invoices/create',
+            href: '/dashboard/inputjobs/create',
             active: true,
           },
         ]}
