@@ -354,7 +354,7 @@ async function processInputJobData(jobId: string, data: string) {
   try {
     // Make external API call to process data
     const response = await axios.post(
-      'https://9yt2fg-5000.csb.app/upload',
+      'https://elmolmtserver-chrisfurlong03-chrisfurlong03s-projects.vercel.app/upload',
       JSON.parse(data),
       {
         responseType: 'text', // Changed from 'arraybuffer' to 'text'
