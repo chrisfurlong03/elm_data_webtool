@@ -26,7 +26,7 @@ export default function EditInputJobForm({
   const handleDownload = async () => {
     try {
       const ncfileString = await fetchNCFile(inputjob.id);
-      const url = ncfileString.downloadUrl;
+      const url = ncfileString?.downloadUrl ?? 'defaultUrl';
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
@@ -39,9 +39,14 @@ export default function EditInputJobForm({
     }
   };
   
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    await updateInputJobWithId(state, formData);
+  };
 
   return (
-    <form action={updateInputJobWithId}>
+    <form onSubmit={handleSubmit}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">

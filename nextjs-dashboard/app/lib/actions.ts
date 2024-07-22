@@ -145,9 +145,14 @@ export async function authenticate(
 
 // NEW
 
+type inputparms = {
+  lat: number;
+  lon: number;
+  startYear: number;
+  endYear: number;
+};
 
-
-export async function takeInputs(req) {
+export async function takeInputs(req: inputparms): Promise<any> {
   const { lat, lon, startYear, endYear } = req;
 
   const daymetUrl = `https://daymet.ornl.gov/single-pixel/api/data?lat=${lat}&lon=${lon}&vars=tmax,tmin,srad,vp,prcp,dayl&start=${startYear}-01-01&end=${endYear}-12-31`;
@@ -160,23 +165,23 @@ export async function takeInputs(req) {
     const jsonData = await csvToJson(response.data);
 
     // Process data
-    console.log(jsonData)
+    console.log(jsonData);
     const processedData = await processData(jsonData);
     return processedData;
-  } catch (error) {
+  } catch (error: any) {
     if (error.response && error.response.data) {
       return new Promise((resolve, reject) => {
         let errorMessage = '';
-        error.response.data.on('data', (chunk) => {
+        error.response.data.on('data', (chunk: Buffer) => {
           errorMessage += chunk.toString();
         });
 
         error.response.data.on('end', () => {
-          resolve(errorMessage+"... No Daymet data for this location!");
+          resolve(errorMessage + "... No Daymet data for this location!");
         });
 
-        error.response.data.on('error', (err) => {
-          resolve(err);
+        error.response.data.on('error', (err: Error) => {
+          resolve(err.message);
         });
       });
     } else {
@@ -219,12 +224,16 @@ async function csvToJson(stream: Readable): Promise<Record<string, Record<string
   return result;
 }
 
-export async function processData(data: any) {
+type ProcessedData = {
+  [key: string]: number[];
+};
+
+export async function processData(data: Record<string, any>): Promise<ProcessedData> {
   const outvars = ['TBOT', 'RH', 'WIND', 'PSRF', 'FSDS', 'PRECTmms'];
-  const invars = ['tmax (deg c)', 'vp (Pa)', 'WS', 'srad (W/m^2)',  'prcp (mm/day)', 'dayl (s)'];
+  const invars = ['tmax (deg c)', 'vp (Pa)', 'WS', 'srad (W/m^2)', 'prcp (mm/day)', 'dayl (s)'];
   const conversion = [1, 1, 1, 1000, 1 / (0.48 * 4.6), 1];
 
-  const processedData = {};
+  const processedData: ProcessedData = {};
 
   for (let i = 0; i < outvars.length; i++) {
     const outvar = outvars[i];
@@ -232,7 +241,7 @@ export async function processData(data: any) {
     const conversionFactor = conversion[i];
 
     if (data[invar]) {
-      processedData[outvar] = Object.values(data[invar]).map(value => value * conversionFactor);
+      processedData[outvar] = Object.values(data[invar]).map((value: any) => Number(value) * conversionFactor);
     } else {
       console.warn(`Data for ${invar} is missing`);
       processedData[outvar] = [];
