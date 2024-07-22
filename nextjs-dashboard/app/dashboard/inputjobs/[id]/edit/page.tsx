@@ -1,31 +1,31 @@
-import Form from '@/app/ui/invoices/edit-form';
+import Form from '@/app/ui/inputjobs/edit-form';
 import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
-import { fetchInvoiceById, fetchCustomers } from '@/app/lib/data';
+import { fetchInputJobById, fetchCustomers } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 
 
 export default async function Page({ params }: { params: { id: string } }) {
   const id = params.id;
-  const [invoice, customers] = await Promise.all([
-    fetchInvoiceById(id),
+  const [inputjob, customers] = await Promise.all([
+    fetchInputJobById(id),
     fetchCustomers(),
   ]);
-  if (!invoice) {
+  if (!inputjob) {
     notFound();
   }
   return (
     <main>
       <Breadcrumbs
         breadcrumbs={[
-          { label: 'Files', href: '/dashboard/invoices' },
+          { label: 'Files', href: '/dashboard/inputjobs' },
           {
             label: 'Edit File',
-            href: `/dashboard/invoices/${id}/edit`,
+            href: `/dashboard/inputjobs/${id}/edit`,
             active: true,
           },
         ]}
       />
-      <Form invoice={invoice} customers={customers} />
+      <Form inputjob={inputjob} customers={customers} />
     </main>
   );
 }

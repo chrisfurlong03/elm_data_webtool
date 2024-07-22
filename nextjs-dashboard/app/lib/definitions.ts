@@ -127,5 +127,6 @@ export type InputJobForm = {
   startdt: number;
   enddt: number;
   data: string;
+  ncfile: BinaryData; 
   status: 'pending' | 'ready';
 };

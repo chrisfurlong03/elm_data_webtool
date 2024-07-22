@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { sql } from '@vercel/postgres';
+import { put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
@@ -11,7 +13,8 @@ import axios from 'axios';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import * as readline from 'readline';
-
+import { Buffer } from 'buffer';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 
  
 const FormSchema = z.object({
@@ -111,14 +114,13 @@ export async function createInvoice(prevState: State, formData: FormData) {
   redirect('/dashboard/invoices');
 }
 
-export async function updateInvoice(
+export async function updateInputJob(
   id: string,
-  prevState: State,
+  prevState: ELMState,
   formData: FormData,
 ) {
-  const validatedFields = UpdateInvoice.safeParse({
+  const validatedFields = UpdateInputJob.safeParse({
     customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
     lat: formData.get('lat'),
     lon: formData.get('lon'),
     startdt: formData.get('startdt'),
@@ -133,13 +135,12 @@ export async function updateInvoice(
     };
   }
  
-  const { customerId, amount, lat, lon, startdt, enddt, status } = validatedFields.data;
-  const amountInCents = amount * 100;
+  const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
  
   try {
     await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, lat = ${lat}, lon = ${lon}, startdt = ${startdt}, enddt = ${enddt}, status = ${status}
+      UPDATE inputjob
+      SET customer_id = ${customerId}, lat = ${lat}, lon = ${lon}, startdt = ${startdt}, enddt = ${enddt}, status = ${status}
       WHERE id = ${id}
     `;
   } catch (error) {
@@ -161,6 +162,18 @@ export async function deleteInvoice(id: string) {
     return { message: 'Database Error: Failed to Delete Invoice.' };
   }
 }
+
+export async function deleteInputJob(id: string) {
+
+  try {
+    await sql`DELETE FROM inputjobs WHERE id = ${id}`;
+    revalidatePath('/dashboard/inputjobs');
+    return { message: 'Deleted Input Job.' };
+  } catch (error) {
+    return { message: 'Database Error: Failed to Delete Input Job.' };
+  }
+}
+
 
 export async function authenticate(
   prevState: string | undefined,
@@ -336,3 +349,96 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   revalidatePath('/dashboard/inputjobs');
   redirect('/dashboard/inputjobs');
 }
+
+// ameriflux inputjobs actions
+export async function createInputJobAFlx(prevState: ELMState, formData: FormData) {
+  // Validate form using Zod
+  const validatedFields = CreateInputJob.safeParse({
+    customerId: formData.get('customerId'),
+    lat: formData.get('lat'),
+    lon: formData.get('lon'),
+    startdt: formData.get('startdt'),
+    enddt: formData.get('enddt'),
+    status: formData.get('status'),
+  });
+ 
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Input Job.',
+    };
+  }
+ 
+  // Prepare data for insertion into the database
+  const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
+  const lonAbs = Math.abs(lon) * 100;
+  const latCents = lat * 100;
+  const date = new Date().toISOString().split('T')[0];
+
+  // Extract JSON file from formData
+  const file = formData.get('data') as File;
+  const data = await file.text();
+
+  // Insert data into the database
+  try {
+    const result = await sql`
+      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date)
+      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, ${status}, ${data}, ${date})
+      RETURNING id
+    `;
+
+    console.log(result);
+
+    const jobId = result.rows[0].id;
+
+    // Call background task but do not wait for it to finish before redirecting
+    processInputJobData(jobId, data);
+  } catch (error) {
+    // If a database error occurs, return a more specific error.
+    console.error('Database Error:', error);
+    return {
+      message: 'Database Error: Failed to Create Input Job.',
+    };
+  }
+ 
+  revalidatePath('/dashboard/inputjobs');
+  redirect('/dashboard/inputjobs');
+}
+
+
+async function processInputJobData(jobId: string, data: string) {
+  try {
+    // Make external API call to process data
+    const response = await axios.post('https://9yt2fg-5000.csb.app/upload', JSON.parse(data), {
+      responseType: 'text' // Changed from 'arraybuffer' to 'text'
+    });
+
+    if (response.status === 200) {
+      const ncFileString = response.data; // Response data is already a string
+
+      // Update the inputjob record with the ncfile string
+      await sql`
+        UPDATE inputjobs
+        SET ncfile = ${ncFileString}
+        WHERE id = ${jobId}
+      `;
+    } else {
+      console.error('Failed to download file. Response status:', response.status);
+    }
+  } catch (error) {
+    console.error('Error processing input job data:', error);
+  }
+}
+
+export async function fetchNCFile(id: string) {
+  try {
+    const result = await sql`SELECT ncfile FROM inputjobs WHERE id = ${id}`;
+    console.log(result.rows[0].ncfile);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Database Error:', error);
+    return null;
+  }
+}
+

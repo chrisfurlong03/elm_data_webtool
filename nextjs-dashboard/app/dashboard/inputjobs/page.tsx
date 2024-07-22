@@ -1,7 +1,7 @@
 import Pagination from '@/app/ui/inputjobs/pagination';
 import Search from '@/app/ui/search';
 import Table from '@/app/ui/inputjobs/table';
-import { CreateInputJob } from '@/app/ui/inputjobs/buttons';
+import { CreateInputJob, CreateInputJobAFlx } from '@/app/ui/inputjobs/buttons';
 import { lusitana } from '@/app/ui/fonts';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
 import { Suspense } from 'react';
@@ -27,6 +27,7 @@ export default async function Page({
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <Search placeholder="Search files..." />
         <CreateInputJob />
+        <CreateInputJobAFlx />
       </div>
       <Suspense key={query + currentPage} fallback={<InvoicesTableSkeleton />}>
         <Table query={query} currentPage={currentPage} />

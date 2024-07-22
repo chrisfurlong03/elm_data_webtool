@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { UpdateInvoice, DeleteInvoice } from '@/app/ui/invoices/buttons';
+import { UpdateInputJob, DeleteInputJob } from '@/app/ui/inputjobs/buttons';
 import InvoiceStatus from '@/app/ui/invoices/status';
 import { formatDateToLocal, formatCurrency } from '@/app/lib/utils';
 import { fetchFilteredInputJobs } from '@/app/lib/data';
@@ -44,8 +44,8 @@ export default async function InputJobsTable({
                     <p>{formatDateToLocal(inputjob.date)}</p>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <UpdateInvoice id={inputjob.id} />
-                    <DeleteInvoice id={inputjob.id} />
+                    <UpdateInputJob id={inputjob.id} />
+                    <DeleteInputJob id={inputjob.id} />
                   </div>
                 </div>
               </div>
@@ -100,8 +100,8 @@ export default async function InputJobsTable({
                   </td>
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex justify-end gap-3">
-                      <UpdateInvoice id={inputjob.id} />
-                      <DeleteInvoice id={inputjob.id} />
+                      <UpdateInputJob id={inputjob.id} />
+                      <DeleteInputJob id={inputjob.id} />
                     </div>
                   </td>
                 </tr>
