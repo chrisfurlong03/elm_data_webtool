@@ -1,5 +1,5 @@
 import Form from '@/app/ui/inputjobs/create-ameriflux-form';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
+import Breadcrumbs from '@/app/ui/inputjobs/breadcrumbs';
 import { fetchCustomers } from '@/app/lib/data';
  
 export default async function Page() {

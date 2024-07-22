@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { UpdateInputJob, DeleteInputJob } from '@/app/ui/inputjobs/buttons';
-import InvoiceStatus from '@/app/ui/invoices/status';
+import InvoiceStatus from '@/app/ui/inputjobs/status';
 import { formatDateToLocal, formatCurrency } from '@/app/lib/utils';
 import { fetchFilteredInputJobs } from '@/app/lib/data';
 

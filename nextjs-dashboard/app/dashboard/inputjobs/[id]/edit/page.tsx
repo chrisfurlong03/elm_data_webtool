@@ -1,5 +1,5 @@
 import Form from '@/app/ui/inputjobs/edit-form';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
+import Breadcrumbs from '@/app/ui/inputjobs/breadcrumbs';
 import { fetchInputJobById, fetchCustomers } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 
