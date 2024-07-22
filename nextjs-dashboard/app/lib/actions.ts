@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
-import { Client } from 'pg';
 import axios from 'axios';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
