@@ -5,10 +5,10 @@ import Link from 'next/link';
 import {
   CheckIcon,
   ClockIcon,
-  HashtagIcon, 
+  HashtagIcon,
   UserCircleIcon,
   CalendarIcon,
-  DocumentIcon
+  DocumentIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
 import { createInputJobAFlx, ELMState } from '@/app/lib/actions';
@@ -197,7 +197,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
 
           <div id="data-error" aria-live="polite" aria-atomic="true">
             {state.errors?.data &&
-              state.errors.data.map((error: string) => (
+              (state.errors.data as string[]).map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -272,4 +272,3 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
     </form>
   );
 }
-

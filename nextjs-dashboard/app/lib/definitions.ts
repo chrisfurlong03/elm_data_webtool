@@ -35,12 +35,10 @@ export type InputJob = {
   customer_id: string;
   lat: number;
   lon: number;
-  data: string;
   startdt: number;
   enddt: number;
-  date: string;
-  // In TypeScript, this is called a string union type.
-  // It means that the "status" property can only be one of the two strings: 'pending' or 'paid'.
+  data: string;
+  ncfile: string;
   status: 'pending' | 'ready';
 };
 
@@ -106,6 +104,7 @@ export type FormattedCustomersTable = {
 export type CustomerField = {
   id: string;
   name: string;
+  data: string;
 };
 
 export type InvoiceForm = {
@@ -127,6 +126,6 @@ export type InputJobForm = {
   startdt: number;
   enddt: number;
   data: string;
-  ncfile: BinaryData; 
+  ncfile: string;
   status: 'pending' | 'ready';
 };

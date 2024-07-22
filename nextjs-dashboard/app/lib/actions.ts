@@ -10,26 +10,6 @@ import axios from 'axios';
 import { Readable } from 'stream';
 import * as readline from 'readline';
 
-
- 
-const FormSchema = z.object({
-  id: z.string(),
-  customerId: z.string({
-    invalid_type_error: 'Please select a customer.',
-  }),
-  amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),
-  lat: z.coerce.number().min(14.5, { message: 'Latitude must be greater than or equal to 14.5' }).max(52.0, { message: 'Latitude must be less than or equal to 52.0' }),
-  lon: z.coerce.number().min(-131.0, { message: 'Longitude must be greater than or equal to -131.0' }).max(-53.0, { message: 'Longitude must be less than or equal to -53.0' }),
-  startdt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
-  enddt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
-  status: z.enum(['pending', 'ready'], {
-    invalid_type_error: 'Please select a status.',
-  }),
-  date: z.string(),
-});
- 
-
-
 // New schema
 
 const ELMFormSchema = z.object({
@@ -37,8 +17,16 @@ const ELMFormSchema = z.object({
   customerId: z.string({
     invalid_type_error: 'Please select a customer.',
   }),
-  lat: z.coerce.number().min(14.5, { message: 'Latitude must be greater than or equal to 14.5' }).max(52.0, { message: 'Latitude must be less than or equal to 52.0' }),
-  lon: z.coerce.number().min(-131.0, { message: 'Longitude must be greater than or equal to -131.0' }).max(-53.0, { message: 'Longitude must be less than or equal to -53.0' }),
+  lat: z.coerce
+    .number()
+    .min(14.5, { message: 'Latitude must be greater than or equal to 14.5' })
+    .max(52.0, { message: 'Latitude must be less than or equal to 52.0' }),
+  lon: z.coerce
+    .number()
+    .min(-131.0, {
+      message: 'Longitude must be greater than or equal to -131.0',
+    })
+    .max(-53.0, { message: 'Longitude must be less than or equal to -53.0' }),
   startdt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
   enddt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
   data: z.string(),
@@ -47,7 +35,7 @@ const ELMFormSchema = z.object({
   }),
   date: z.string(),
 });
- 
+
 const CreateInputJob = ELMFormSchema.omit({ id: true, date: true, data: true });
 const UpdateInputJob = ELMFormSchema.omit({ id: true, date: true });
 
@@ -58,16 +46,11 @@ export type ELMState = {
     lon?: string[];
     startdt?: string[];
     enddt?: string[];
+    data?: string[];
     status?: string[];
   };
   message?: string | null;
 };
-
-
- 
-
- 
-
 
 export async function updateInputJob(
   id: string,
@@ -82,16 +65,16 @@ export async function updateInputJob(
     enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
- 
+
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Missing Fields. Failed to Update Input Job.',
     };
   }
- 
+
   const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
- 
+
   try {
     await sql`
       UPDATE inputjob
@@ -101,16 +84,12 @@ export async function updateInputJob(
   } catch (error) {
     return { message: 'Database Error: Failed to Update Input Job.' };
   }
- 
+
   revalidatePath('/dashboard/inputjobs');
   redirect('/dashboard/inputjobs');
 }
 
-
-
-
 export async function deleteInputJob(id: string) {
-
   try {
     await sql`DELETE FROM inputjobs WHERE id = ${id}`;
     revalidatePath('/dashboard/inputjobs');
@@ -119,7 +98,6 @@ export async function deleteInputJob(id: string) {
     return { message: 'Database Error: Failed to Delete Input Job.' };
   }
 }
-
 
 export async function authenticate(
   prevState: string | undefined,
@@ -139,9 +117,6 @@ export async function authenticate(
     throw error;
   }
 }
-
-
-
 
 // NEW
 
@@ -177,7 +152,7 @@ export async function takeInputs(req: inputparms): Promise<any> {
         });
 
         error.response.data.on('end', () => {
-          resolve(errorMessage + "... No Daymet data for this location!");
+          resolve(errorMessage + '... No Daymet data for this location!');
         });
 
         error.response.data.on('error', (err: Error) => {
@@ -190,35 +165,37 @@ export async function takeInputs(req: inputparms): Promise<any> {
   }
 }
 
-async function csvToJson(stream: Readable): Promise<Record<string, Record<string, number>>> {
+async function csvToJson(
+  stream: Readable,
+): Promise<Record<string, Record<string, number>>> {
   const rl = readline.createInterface({
-      input: stream,
-      crlfDelay: Infinity
+    input: stream,
+    crlfDelay: Infinity,
   });
 
   const lines: string[] = [];
   for await (const line of rl) {
-      lines.push(line);
+    lines.push(line);
   }
 
-  const headers = lines[6].split(",");
+  const headers = lines[6].split(',');
   const dataLines = lines.slice(7);
 
   const result: Record<string, Record<string, number>> = {};
 
-  headers.slice(2).forEach(header => {
-      result[header] = {};
+  headers.slice(2).forEach((header) => {
+    result[header] = {};
   });
 
-  dataLines.forEach(line => { 
-      const values = line.split(",");
-      const year = values[0];
-      const yday = values[1];
-      const key = `${year}_${yday}`;
+  dataLines.forEach((line) => {
+    const values = line.split(',');
+    const year = values[0];
+    const yday = values[1];
+    const key = `${year}_${yday}`;
 
-      headers.slice(2).forEach((header, index) => {
-          result[header][key] = parseFloat(values[index + 2]);
-      });
+    headers.slice(2).forEach((header, index) => {
+      result[header][key] = parseFloat(values[index + 2]);
+    });
   });
 
   return result;
@@ -228,9 +205,18 @@ type ProcessedData = {
   [key: string]: number[];
 };
 
-export async function processData(data: Record<string, any>): Promise<ProcessedData> {
+export async function processData(
+  data: Record<string, any>,
+): Promise<ProcessedData> {
   const outvars = ['TBOT', 'RH', 'WIND', 'PSRF', 'FSDS', 'PRECTmms'];
-  const invars = ['tmax (deg c)', 'vp (Pa)', 'WS', 'srad (W/m^2)', 'prcp (mm/day)', 'dayl (s)'];
+  const invars = [
+    'tmax (deg c)',
+    'vp (Pa)',
+    'WS',
+    'srad (W/m^2)',
+    'prcp (mm/day)',
+    'dayl (s)',
+  ];
   const conversion = [1, 1, 1, 1000, 1 / (0.48 * 4.6), 1];
 
   const processedData: ProcessedData = {};
@@ -241,7 +227,9 @@ export async function processData(data: Record<string, any>): Promise<ProcessedD
     const conversionFactor = conversion[i];
 
     if (data[invar]) {
-      processedData[outvar] = Object.values(data[invar]).map((value: any) => Number(value) * conversionFactor);
+      processedData[outvar] = Object.values(data[invar]).map(
+        (value: any) => Number(value) * conversionFactor,
+      );
     } else {
       console.warn(`Data for ${invar} is missing`);
       processedData[outvar] = [];
@@ -250,7 +238,6 @@ export async function processData(data: Record<string, any>): Promise<ProcessedD
 
   return processedData;
 }
-
 
 // inputjobs database actions
 
@@ -264,7 +251,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
     enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
- 
+
   // If form validation fails, return errors early. Otherwise, continue.
   if (!validatedFields.success) {
     return {
@@ -272,7 +259,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
       message: 'Missing Fields. Failed to Create Input Job.',
     };
   }
- 
+
   // Prepare data for insertion into the database
   const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
@@ -282,10 +269,10 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
     lat: lat,
     lon: lon,
     startYear: startdt,
-    endYear: enddt
+    endYear: enddt,
   };
   const data = await takeInputs(newReq);
- 
+
   // Insert data into the database
   try {
     await sql`
@@ -299,13 +286,16 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
       message: 'Database Error: Failed to Create Input Job.',
     };
   }
- 
+
   revalidatePath('/dashboard/inputjobs');
   redirect('/dashboard/inputjobs');
 }
 
 // ameriflux inputjobs actions
-export async function createInputJobAFlx(prevState: ELMState, formData: FormData) {
+export async function createInputJobAFlx(
+  prevState: ELMState,
+  formData: FormData,
+) {
   // Validate form using Zod
   const validatedFields = CreateInputJob.safeParse({
     customerId: formData.get('customerId'),
@@ -315,7 +305,7 @@ export async function createInputJobAFlx(prevState: ELMState, formData: FormData
     enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
- 
+
   // If form validation fails, return errors early. Otherwise, continue.
   if (!validatedFields.success) {
     return {
@@ -323,7 +313,7 @@ export async function createInputJobAFlx(prevState: ELMState, formData: FormData
       message: 'Missing Fields. Failed to Create Input Job.',
     };
   }
- 
+
   // Prepare data for insertion into the database
   const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
@@ -355,18 +345,21 @@ export async function createInputJobAFlx(prevState: ELMState, formData: FormData
       message: 'Database Error: Failed to Create Input Job.',
     };
   }
- 
+
   revalidatePath('/dashboard/inputjobs');
   redirect('/dashboard/inputjobs');
 }
 
-
 async function processInputJobData(jobId: string, data: string) {
   try {
     // Make external API call to process data
-    const response = await axios.post('https://9yt2fg-5000.csb.app/upload', JSON.parse(data), {
-      responseType: 'text' // Changed from 'arraybuffer' to 'text'
-    });
+    const response = await axios.post(
+      'https://9yt2fg-5000.csb.app/upload',
+      JSON.parse(data),
+      {
+        responseType: 'text', // Changed from 'arraybuffer' to 'text'
+      },
+    );
 
     if (response.status === 200) {
       const ncFileString = response.data; // Response data is already a string
@@ -378,7 +371,10 @@ async function processInputJobData(jobId: string, data: string) {
         WHERE id = ${jobId}
       `;
     } else {
-      console.error('Failed to download file. Response status:', response.status);
+      console.error(
+        'Failed to download file. Response status:',
+        response.status,
+      );
     }
   } catch (error) {
     console.error('Error processing input job data:', error);
@@ -395,4 +391,3 @@ export async function fetchNCFile(id: string) {
     return null;
   }
 }
-
