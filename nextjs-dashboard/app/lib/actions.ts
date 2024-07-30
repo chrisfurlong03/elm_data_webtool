@@ -385,7 +385,8 @@ export async function fetchNCFile(id: string) {
   try {
     const result = await sql`SELECT ncfile FROM inputjobs WHERE id = ${id}`;
     console.log(result.rows[0].ncfile);
-    return result.rows[0];
+    
+    return JSON.parse(result.rows[0].ncfile);
   } catch (error) {
     console.error('Database Error:', error);
     return null;
