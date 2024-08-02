@@ -261,7 +261,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   }
 
   // Prepare data for insertion into the database
-  const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
+  const { customerId, lat, lon, startdt, enddt } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
   const latCents = lat * 100;
   const date = new Date().toISOString().split('T')[0];
@@ -277,7 +277,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   try {
     await sql`
       INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date)
-      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, ${status}, ${data}, ${date})
+      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date})
     `;
   } catch (error) {
     // If a database error occurs, return a more specific error.
