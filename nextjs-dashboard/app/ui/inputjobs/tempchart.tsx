@@ -1,6 +1,6 @@
 import React from 'react';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, registerables } from 'chart.js';
+import { Chart as ChartJS, registerables, ChartOptions } from 'chart.js';
 import 'chartjs-adapter-date-fns'; // Import the date adapter
 
 ChartJS.register(...registerables);
@@ -49,7 +49,7 @@ const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, dataLable, ti
     ],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<"line"> = {
     scales: {
       x: {
         type: 'time' as const,
