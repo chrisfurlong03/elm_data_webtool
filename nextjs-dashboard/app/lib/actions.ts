@@ -36,7 +36,7 @@ const ELMFormSchema = z.object({
   date: z.string(),
 });
 
-const CreateInputJob = ELMFormSchema.omit({ id: true, date: true, data: true });
+const CreateInputJob = ELMFormSchema.omit({ id: true, date: true, data: true, status: true});
 const UpdateInputJob = ELMFormSchema.omit({ id: true, date: true });
 
 export type ELMState = {
@@ -303,7 +303,6 @@ export async function createInputJobAFlx(
     lon: formData.get('lon'),
     startdt: formData.get('startdt'),
     enddt: formData.get('enddt'),
-    status: formData.get('status'),
   });
 
   // If form validation fails, return errors early. Otherwise, continue.
@@ -315,7 +314,7 @@ export async function createInputJobAFlx(
   }
 
   // Prepare data for insertion into the database
-  const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
+  const { customerId, lat, lon, startdt, enddt } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
   const latCents = lat * 100;
   const date = new Date().toISOString().split('T')[0];
@@ -323,18 +322,18 @@ export async function createInputJobAFlx(
   // Extract JSON file from formData
   const file = formData.get('data') as File;
   const data = await file.text();
-
+  var jobId = ""
   // Insert data into the database
   try {
     const result = await sql`
       INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date)
-      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, ${status}, ${data}, ${date})
+      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date})
       RETURNING id
     `;
 
     console.log(result);
 
-    const jobId = result.rows[0].id;
+    jobId = result.rows[0].id;
 
     // Call background task but do not wait for it to finish before redirecting
     processInputJobData(jobId, data);
@@ -345,9 +344,8 @@ export async function createInputJobAFlx(
       message: 'Database Error: Failed to Create Input Job.',
     };
   }
-
-  revalidatePath('/dashboard/inputjobs');
-  redirect('/dashboard/inputjobs');
+  revalidatePath(`/dashboard/inputjobs/`);
+  redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
 async function processInputJobData(jobId: string, data: string) {
@@ -367,7 +365,7 @@ async function processInputJobData(jobId: string, data: string) {
       // Update the inputjob record with the ncfile string
       await sql`
         UPDATE inputjobs
-        SET ncfile = ${ncFileString}
+        SET ncfile = ${ncFileString}, status = 'ready'
         WHERE id = ${jobId}
       `;
     } else {
@@ -392,3 +390,16 @@ export async function fetchNCFile(id: string) {
     return null;
   }
 }
+
+export async function pendingStatus(id:string) {
+  try {
+    const result = await sql`SELECT status FROM inputjobs WHERE id = ${id}`;
+    console.log(result.rows[0].status);
+    
+    return result.rows[0].status;
+  } catch (error) {
+    console.error('Database Error:', error);
+    return null;
+  }
+}
+

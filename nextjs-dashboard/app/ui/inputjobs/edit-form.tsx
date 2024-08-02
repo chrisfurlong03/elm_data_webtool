@@ -1,7 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormState } from 'react-dom';
-import { updateInputJob, fetchNCFile } from '@/app/lib/actions';
+import { updateInputJob, fetchNCFile, pendingStatus } from '@/app/lib/actions';
 import { CustomerField, InputJobForm } from '@/app/lib/definitions';
 import {
   CheckIcon,
@@ -9,7 +9,7 @@ import {
   CurrencyDollarIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
-import LoadData from './loaddata';
+import { Button } from '@/app/ui/button';
 
 export default function EditInputJobForm({
   inputjob,
@@ -21,81 +21,31 @@ export default function EditInputJobForm({
   const initialState = { message: null, errors: {} };
   const updateInputJobWithId = updateInputJob.bind(null, inputjob.id);
   const [state, formAction] = useFormState(updateInputJobWithId, initialState);
-  const [showLoadData, setShowLoadData] = useState(false);
 
-  const handleDownload = async () => {
-    try {
-      const ncfileString = await fetchNCFile(inputjob.id);
-      const url = ncfileString?.downloadUrl ?? 'defaultUrl';
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `inputjob_${inputjob.id}.nc`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to download file:', error);
+  const [status, setStatus] = useState(null);
+
+  const fetchStatus = async () => {
+    const result = await pendingStatus(inputjob.id);
+    setStatus(result);
+  };
+
+  useEffect(() => {
+    // Fetch status initially
+    fetchStatus();
+    // Set up polling to check for status changes every 10 seconds
+    const interval = setInterval(fetchStatus, 3000);
+    // Cleanup interval on component unmount
+    if (inputjob.status === 'ready') {
+      clearInterval(interval);
+    } else {
+      window.location.reload();
     }
-  };
+  }, []);
   
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    await updateInputJobWithId(state, formData);
-  };
-
+  
   return (
-    <form onSubmit={handleSubmit}>
+    <form action={formAction}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
-        {/* Customer Name */}
-        <div className="mb-4">
-          <label htmlFor="customer" className="mb-2 block text-sm font-medium">
-            User
-          </label>
-          <div className="relative">
-            <select
-              disabled
-              id="customer"
-              name="customerId"
-              className="peer block w-full cursor-pointer rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
-              defaultValue={inputjob.customer_id}
-            >
-              <option value="" disabled>
-                Select a customer
-              </option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-            <UserCircleIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500" />
-          </div>
-        </div>
-
-        {/* Invoice Amount */}
-        <div className="mb-4">
-          <label htmlFor="amount" className="mb-2 block text-sm font-medium">
-            Start year
-          </label>
-          <div className="relative mt-2 rounded-md">
-            <div className="relative">
-              <input
-                disabled
-                id="startdt"
-                name="startdt"
-                type="number"
-                step="0.01"
-                defaultValue={inputjob.startdt}
-                placeholder="Enter start year"
-                className="peer block w-full rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
-              />
-              <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
-            </div>
-          </div>
-        </div>
-
         {/* Invoice Status */}
         <fieldset disabled>
           <legend className="mb-2 block text-sm font-medium">
@@ -139,16 +89,9 @@ export default function EditInputJobForm({
           </div>
         </fieldset>
       </div>
-
-
-      {/* Download button */}
-      <button
-        type="button"
-        className="mt-4 rounded-md bg-green-500 py-2 px-4 text-white"
-        onClick={handleDownload}
-      >
-        Download .nc File
-      </button>
+      <div className="mt-6 flex justify-end gap-4">
+          <Button type="submit">Finalize Input Job</Button>
+      </div>
     </form>
   );
 }

@@ -305,6 +305,7 @@ export async function fetchInputJobById(id: string) {
         inputjobs.lon,
         inputjobs.startdt, 
         inputjobs.enddt,
+        inputjobs.data,
         inputjobs.status
       FROM inputjobs
       WHERE inputjobs.id = ${id};
