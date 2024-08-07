@@ -30,7 +30,6 @@ export default function EditInputJobForm({
     const result = await pendingStatus(inputjob.id);
     setStatus(result);
   };
-
   useEffect(() => {
     // Fetch status initially
     fetchStatus();
@@ -53,16 +52,16 @@ export default function EditInputJobForm({
           <legend className="mb-2 block text-sm font-medium">
             The input job status
           </legend>
-          <div className="rounded-md border border-gray-200 bg-white px-[14px] py-3">
+          <div className={`rounded-md border border-gray-200 bg-white px-[14px] py-3`}>
             <div className="flex gap-4">
-              <div className="flex items-center">
+              <div className={`flex items-center`}>
                 <input
                   id="pending"
                   name="status"
                   type="radio"
                   value="pending"
                   defaultChecked={inputjob.status === 'pending'}
-                  className="h-4 w-4 cursor-pointer border-gray-300 bg-gray-100 text-gray-600 checked:outline-dashed checked:outline-2 checked:outline-offset-2 checked:animate-spin"
+                  className={`h-4 w-4 cursor-pointer border-gray-300 bg-gray-100 text-gray-600 ${inputjob.status === 'pending' ? 'animate-spin outline-dashed outline-2 outline-offset-2' : ''}`}
                 />
                 <label
                   htmlFor="pending"
