@@ -8,12 +8,13 @@ ChartJS.register(...registerables);
 interface TemperatureChartProps {
   data: (number | string)[];
   dataLable: (string);
+  tStepDay: (number); 
   title: (string);
   ytitle: (string);
 }
 
 
-const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, dataLable, title, ytitle }) => {
+const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, dataLable, tStepDay, title, ytitle }) => {
   // Function to generate time intervals
   const generateTimeIntervals = (startYear: number, endYear: number): string[] => {
     const intervals: string[] = [];
@@ -23,7 +24,7 @@ const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, dataLable, ti
 
     while (currentDate <= endDate) {
       intervals.push(currentDate.toISOString().slice(0, 19).replace('T', ' '));
-      currentDate.setMinutes(currentDate.getMinutes() + 30); // Add 30 minutes
+      currentDate.setMinutes(currentDate.getMinutes() + (30 * (48/tStepDay))); // Add 30 minutes
     }
 
     return intervals;

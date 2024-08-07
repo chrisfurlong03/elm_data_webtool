@@ -15,10 +15,32 @@ async function getUser(email: string): Promise<User | undefined> {
     throw new Error('Failed to fetch user.');
   }
 }
+
+export async function checkUser(email: undefined | string | null): Promise<User> {
+  const user = await sql<User>`SELECT * FROM users WHERE email=${email}`;
+  return user.rows[0];
+}
+
+
+
+export async function createUser(email: string, name: string, password: string) {
+  try {
+    const saltRounds: number = 10;
+    const hash = bcrypt.hashSync(password, saltRounds);
+    return await sql<User>`
+    INSERT INTO users (email, name, password)
+    VALUES (${email}, ${name}, ${hash});
+    `;
+  } catch (error) {
+    console.error('Failed to create user:', error);
+    throw new Error('Failed to create user.');
+  }
+}
  
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  providers: [
+  providers:
+  [
     Credentials({
       async authorize(credentials) {
         const parsedCredentials = z

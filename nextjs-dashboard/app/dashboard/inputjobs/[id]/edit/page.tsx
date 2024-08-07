@@ -30,7 +30,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       />
       <Form inputjob={inputjob} customers={customers} />
       <div className='mb-4' />
-      {inputjob.status === 'ready' &&  <Tools inputjob={inputjob} customers={customers} />}
+      {inputjob.status === 'ready' &&  <Tools inputjob={inputjob} />}
     </main>
   );
 }

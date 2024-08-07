@@ -2,23 +2,15 @@
 import { useState } from 'react';
 import { fetchNCFile } from '@/app/lib/actions';
 import TemperatureChart from '@/app/ui/inputjobs/tempchart'
-import { CustomerField, InputJobForm } from '@/app/lib/definitions';
-import {
-  CheckIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-  UserCircleIcon,
-} from '@heroicons/react/24/outline';
+import {  InputJobForm } from '@/app/lib/definitions';
 import { Button } from '@/app/ui/button';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 export default function EditInputJobForm({
   inputjob,
-  customers,
 }: {
   inputjob: InputJobForm;
-  customers: CustomerField[];
 }) {
   const [showChart, setShowChart] = useState<string | null>(null);
 
@@ -86,12 +78,12 @@ export default function EditInputJobForm({
           {showChart === 'P' ? 'Hide P Chart' : 'P Chart'}
         </Button>
       </div>
-        {showChart === 'TA' && <TemperatureChart data={JSON.parse(inputjob.data).TA} dataLable='TA (temperature)' title='TA Over Time in 2016' ytitle='Temperature (TA)' />}
-        {showChart === 'RH' && <TemperatureChart data={JSON.parse(inputjob.data).RH} dataLable='RH (relative humidity)' title='RH Over Time in 2016' ytitle='Relative Humidity (RH)'  />}
-        {showChart === 'WS' && <TemperatureChart data={JSON.parse(inputjob.data).WS} dataLable='WS (wind speed)' title='WS Over Time in 2016' ytitle='Wind Speed (WS)' />}
-        {showChart === 'PPFD_OUT' && <TemperatureChart data={JSON.parse(inputjob.data).PPFD_OUT} dataLable='PPFD_OUT (outgoing radiation)' title='PPFD_OUT Over Time in 2016' ytitle='Outgoing Radiation (PPFD_OUT)'/>}
-        {showChart === 'P' && <TemperatureChart data={JSON.parse(inputjob.data).P} dataLable='P (precipitation)' title='P Over Time in 2016' ytitle='Precipitation (P)'/>}     
-        {showChart === 'PA' && <TemperatureChart data={JSON.parse(inputjob.data).PA} dataLable='PA (pressure)' title='PA Over Time in 2016' ytitle='Pressure (PA)' />}  
+        {showChart === 'TA' && <TemperatureChart data={JSON.parse(inputjob.data).TA} dataLable='TA (temperature)' title='TA Over Time in 2016' ytitle='Temperature (TA)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'RH' && <TemperatureChart data={JSON.parse(inputjob.data).RH} dataLable='RH (relative humidity)' title='RH Over Time in 2016' ytitle='Relative Humidity (RH)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'WS' && <TemperatureChart data={JSON.parse(inputjob.data).WS} dataLable='WS (wind speed)' title='WS Over Time in 2016' ytitle='Wind Speed (WS)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'PPFD_OUT' && <TemperatureChart data={JSON.parse(inputjob.data).PPFD_OUT} dataLable='PPFD_OUT (outgoing radiation)' title='PPFD_OUT Over Time in 2016' ytitle='Outgoing Radiation (PPFD_OUT)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'P' && <TemperatureChart data={JSON.parse(inputjob.data).P} dataLable='P (precipitation)' title='P Over Time in 2016' ytitle='Precipitation (P)' tStepDay={inputjob.time_step_day} />}     
+        {showChart === 'PA' && <TemperatureChart data={JSON.parse(inputjob.data).PA} dataLable='PA (pressure)' title='PA Over Time in 2016' ytitle='Pressure (PA)' tStepDay={inputjob.time_step_day} />}  
     </div>
           <div className="rounded-md bg-gray-50 p-4 mt-4 md:p-6">
           <Button

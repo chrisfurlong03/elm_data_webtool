@@ -39,6 +39,7 @@ export type InputJob = {
   enddt: number;
   data: string;
   ncfile: string;
+  time_step_day: number;
   status: 'pending' | 'ready';
 };
 
@@ -120,12 +121,12 @@ export type InvoiceForm = {
 
 export type InputJobForm = {
   id: string;
-  customer_id: string;
   lat: number;
   lon: number;
   startdt: number;
   enddt: number;
   data: string;
   ncfile: string;
+  time_step_day: number;
   status: 'pending' | 'ready';
 };

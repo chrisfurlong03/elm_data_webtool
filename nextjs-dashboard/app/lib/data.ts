@@ -10,6 +10,7 @@ import {
   User,
   Revenue,
 } from './definitions';
+import { auth, checkUser } from '@/auth'
 import { formatCurrency } from './utils';
 
 export async function fetchRevenue() {
@@ -247,21 +248,23 @@ export async function fetchFilteredInputJobs(
   currentPage: number,
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
+  let session = await auth();
+  let user = await checkUser(session?.user?.email);
   try {
     const inputjobs = await sql<InputJobsTable>`
       SELECT
         inputjobs.id,
         inputjobs.date,
         inputjobs.status,
-        customers.name,
-        customers.email,
-        customers.image_url
+        users.name,
+        users.email,
+        users.image_url
       FROM inputjobs
-      JOIN customers ON inputjobs.customer_id = customers.id
+      JOIN users ON inputjobs.customer_id = users.id
       WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
+        inputjobs.customer_id=${user.id} AND
+        users.name ILIKE ${`%${query}%`} OR
+        users.email ILIKE ${`%${query}%`} OR
         inputjobs.date::text ILIKE ${`%${query}%`} OR
         inputjobs.status ILIKE ${`%${query}%`}
       ORDER BY inputjobs.date DESC
@@ -306,7 +309,8 @@ export async function fetchInputJobById(id: string) {
         inputjobs.startdt, 
         inputjobs.enddt,
         inputjobs.data,
-        inputjobs.status
+        inputjobs.status,
+        inputjobs.time_step_day
       FROM inputjobs
       WHERE inputjobs.id = ${id};
     `;

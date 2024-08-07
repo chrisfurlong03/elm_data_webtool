@@ -4,19 +4,17 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { signIn } from '@/auth';
+import { auth, signIn, createUser, checkUser } from '@/auth';
 import { AuthError } from 'next-auth';
 import axios from 'axios';
 import { Readable } from 'stream';
 import * as readline from 'readline';
+import { fetchInputJobById } from './data';
 
 // New schema
 
 const ELMFormSchema = z.object({
   id: z.string(),
-  customerId: z.string({
-    invalid_type_error: 'Please select a customer.',
-  }),
   lat: z.coerce
     .number()
     .min(14.5, { message: 'Latitude must be greater than or equal to 14.5' })
@@ -41,7 +39,6 @@ const UpdateInputJob = ELMFormSchema.omit({ id: true, date: true });
 
 export type ELMState = {
   errors?: {
-    customerId?: string[];
     lat?: string[];
     lon?: string[];
     startdt?: string[];
@@ -73,12 +70,12 @@ export async function updateInputJob(
     };
   }
 
-  const { customerId, lat, lon, startdt, enddt, status } = validatedFields.data;
+  const { lat, lon, startdt, enddt, status } = validatedFields.data;
 
   try {
     await sql`
       UPDATE inputjob
-      SET customer_id = ${customerId}, lat = ${lat}, lon = ${lon}, startdt = ${startdt}, enddt = ${enddt}, status = ${status}
+      SET lat = ${lat}, lon = ${lon}, startdt = ${startdt}, enddt = ${enddt}, status = ${status}
       WHERE id = ${id}
     `;
   } catch (error) {
@@ -99,12 +96,42 @@ export async function deleteInputJob(id: string) {
   }
 }
 
+
+
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   try {
     await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
+
+export async function register(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    const email = formData.get('email') as string;
+    const name = formData.get('name') as string;
+    const password = formData.get('password') as string;
+    const search = await checkUser(email);
+    if (!search) {
+      await createUser(email, name, password);
+      return authenticate(prevState, formData);
+    } else {
+      return 'User already exists';
+    }
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -127,7 +154,7 @@ type inputparms = {
   endYear: number;
 };
 
-export async function takeInputs(req: inputparms): Promise<any> {
+export async function takeORNLInputs(req: inputparms): Promise<any> {
   const { lat, lon, startYear, endYear } = req;
 
   const daymetUrl = `https://daymet.ornl.gov/single-pixel/api/data?lat=${lat}&lon=${lon}&vars=tmax,tmin,srad,vp,prcp,dayl&start=${startYear}-01-01&end=${endYear}-12-31`;
@@ -163,6 +190,30 @@ export async function takeInputs(req: inputparms): Promise<any> {
       return error.message;
     }
   }
+}
+
+export async function takeInputs(jobId: string, req: any) {
+
+  const { lat, lon, startYear, endYear } = req;
+
+  const nasaUrl = `https://power.larc.nasa.gov/api/temporal/hourly/point?start=${startYear}0101&end=${endYear}1231&latitude=${lat}&longitude=${lon}&community=re&parameters=T2M%2CRH2M%2CWS2M%2CPS%2CCLRSKY_SFC_PAR_TOT%2CPRECTOTCORR&format=json&header=true&time-standard=lst`;
+
+  try {
+    const response = await axios.get(nasaUrl);
+    const data = response.data.properties.parameter;
+
+    // Process data
+    const processedData = await processData(data);
+    await sql`
+    UPDATE inputjobs
+    SET data = ${processedData}
+    WHERE id = ${jobId};
+    `
+    processInputJobData(jobId, false)
+  } catch (error) {
+    console.error('Error fetching data from NASA Power API:', error);
+    }
+
 }
 
 async function csvToJson(
@@ -207,28 +258,19 @@ type ProcessedData = {
 
 export async function processData(
   data: Record<string, any>,
-): Promise<ProcessedData> {
-  const outvars = ['TBOT', 'RH', 'WIND', 'PSRF', 'FSDS', 'PRECTmms'];
-  const invars = [
-    'tmax (deg c)',
-    'vp (Pa)',
-    'WS',
-    'srad (W/m^2)',
-    'prcp (mm/day)',
-    'dayl (s)',
-  ];
-  const conversion = [1, 1, 1, 1000, 1 / (0.48 * 4.6), 1];
+): Promise<string> {
+  const outvars = ['TA', 'RH', 'WS', 'PA', 'PPFD_OUT', 'P'];
+  const invars = ['T2M', 'RH2M', 'WS2M', 'PS', 'CLRSKY_SFC_PAR_TOT', 'PRECTOTCORR'];
 
   const processedData: ProcessedData = {};
 
   for (let i = 0; i < outvars.length; i++) {
     const outvar = outvars[i];
     const invar = invars[i];
-    const conversionFactor = conversion[i];
 
     if (data[invar]) {
       processedData[outvar] = Object.values(data[invar]).map(
-        (value: any) => Number(value) * conversionFactor,
+        (value: any) => Number(value),
       );
     } else {
       console.warn(`Data for ${invar} is missing`);
@@ -236,7 +278,7 @@ export async function processData(
     }
   }
 
-  return processedData;
+  return JSON.stringify(processedData);
 }
 
 // inputjobs database actions
@@ -244,14 +286,14 @@ export async function processData(
 export async function createInputJob(prevState: ELMState, formData: FormData) {
   // Validate form using Zod
   const validatedFields = CreateInputJob.safeParse({
-    customerId: formData.get('customerId'),
     lat: formData.get('lat'),
     lon: formData.get('lon'),
     startdt: formData.get('startdt'),
     enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
-
+  let session = await auth();
+  let user = await checkUser(session?.user?.email as string);
   // If form validation fails, return errors early. Otherwise, continue.
   if (!validatedFields.success) {
     return {
@@ -261,7 +303,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   }
 
   // Prepare data for insertion into the database
-  const { customerId, lat, lon, startdt, enddt } = validatedFields.data;
+  const { lat, lon, startdt, enddt } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
   const latCents = lat * 100;
   const date = new Date().toISOString().split('T')[0];
@@ -271,14 +313,17 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
     startYear: startdt,
     endYear: enddt,
   };
-  const data = await takeInputs(newReq);
-
+  var result;
+  var jobId: string;
   // Insert data into the database
   try {
-    await sql`
-      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date)
-      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date})
+    result = await sql`
+      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date, time_step_day)
+      VALUES (${user.id}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', 'pending', ${date}, 24)
+      RETURNING id
     `;
+    jobId = result.rows[0].id;
+
   } catch (error) {
     // If a database error occurs, return a more specific error.
     console.error('Database Error:', error);
@@ -286,9 +331,9 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
       message: 'Database Error: Failed to Create Input Job.',
     };
   }
-
-  revalidatePath('/dashboard/inputjobs');
-  redirect('/dashboard/inputjobs');
+  takeInputs(jobId, newReq);
+  revalidatePath(`/dashboard/inputjobs/`);
+  redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
 // ameriflux inputjobs actions
@@ -298,13 +343,13 @@ export async function createInputJobAFlx(
 ) {
   // Validate form using Zod
   const validatedFields = CreateInputJob.safeParse({
-    customerId: formData.get('customerId'),
     lat: formData.get('lat'),
     lon: formData.get('lon'),
     startdt: formData.get('startdt'),
     enddt: formData.get('enddt'),
   });
-
+  let session = await auth();
+  let user = await checkUser(session?.user?.email as string);
   // If form validation fails, return errors early. Otherwise, continue.
   if (!validatedFields.success) {
     return {
@@ -314,7 +359,7 @@ export async function createInputJobAFlx(
   }
 
   // Prepare data for insertion into the database
-  const { customerId, lat, lon, startdt, enddt } = validatedFields.data;
+  const { lat, lon, startdt, enddt } = validatedFields.data;
   const lonAbs = Math.abs(lon) * 100;
   const latCents = lat * 100;
   const date = new Date().toISOString().split('T')[0];
@@ -326,17 +371,16 @@ export async function createInputJobAFlx(
   // Insert data into the database
   try {
     const result = await sql`
-      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date)
-      VALUES (${customerId}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date})
+      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date, time_step_day)
+      VALUES (${user.id}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date}, 48)
       RETURNING id
     `;
 
-    console.log(result);
 
     jobId = result.rows[0].id;
 
     // Call background task but do not wait for it to finish before redirecting
-    processInputJobData(jobId, data);
+    processInputJobData(jobId);
   } catch (error) {
     // If a database error occurs, return a more specific error.
     console.error('Database Error:', error);
@@ -348,16 +392,29 @@ export async function createInputJobAFlx(
   redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
-async function processInputJobData(jobId: string, data: string) {
+async function processInputJobData(jobId: string, aflux: boolean = false) {
   try {
+    const data = await fetchInputJobById(jobId);
+    var response;
     // Make external API call to process data
-    const response = await axios.post(
-      'https://seahorse-app-xu2hp.ondigitalocean.app/upload',
-      JSON.parse(data),
-      {
-        responseType: 'text', // Changed from 'arraybuffer' to 'text'
-      },
-    );
+    if (aflux) {
+       response = await axios.post(
+        'https://seahorse-app-xu2hp.ondigitalocean.app/upload?aflux',
+        JSON.parse(data.data),
+        {
+          responseType: 'text', // Changed from 'arraybuffer' to 'text'
+        },
+      );
+    } else {
+      response = await axios.post(
+        'https://seahorse-app-xu2hp.ondigitalocean.app/upload',
+        JSON.parse(data.data),
+        {
+          responseType: 'text', // Changed from 'arraybuffer' to 'text'
+        },
+      );
+    }
+
 
     if (response.status === 200) {
       const ncFileString = response.data; // Response data is already a string
