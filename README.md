@@ -1,5 +1,7 @@
 # Node.js template
 
+Please check nextjs-dashboard for the actual app. This is a CodeSandBox starter for Next.js.
+
 This is a Node.js project.
 
 Add your [configuration](https://codesandbox.io/docs/projects/learn/setting-up/tasks) to optimize it for [CodeSandbox](https://codesandbox.io/p/dashboard).
