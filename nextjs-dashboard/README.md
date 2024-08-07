@@ -30,3 +30,5 @@ The ELM/OLMT Server is a Flask Application that acts as a middleman between ELM 
 
 When deploying this repository on vercel, make sure to set the root directory to this one. Also, you will need to setup Vercel Blob and Vercel Postgres and change the secrets + seed the data to get this operational. Also make sure you are connected to an operational ElM/OLMT Flask Server and see above for how to configure this interface to work with that server.
 
+### Other Config Needed
+Other than the flags detailed above, other config will be flagged by a "CONFIG NEEDED HERE" comment.
