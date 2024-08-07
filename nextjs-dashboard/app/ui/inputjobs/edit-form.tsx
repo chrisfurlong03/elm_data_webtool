@@ -1,13 +1,15 @@
 'use client';
+/*
+* used by dashboard/inputjobs/[id]/edit
+* Edit form only shows status and cannot be edited.
+*/
 import React, { useState, useEffect } from 'react';
 import { useFormState } from 'react-dom';
-import { updateInputJob, fetchNCFile, pendingStatus } from '@/app/lib/actions';
+import { updateInputJob, pendingStatus } from '@/app/lib/actions';
 import { CustomerField, InputJobForm } from '@/app/lib/definitions';
 import {
   CheckIcon,
   ClockIcon,
-  CurrencyDollarIcon,
-  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/app/ui/button';
 

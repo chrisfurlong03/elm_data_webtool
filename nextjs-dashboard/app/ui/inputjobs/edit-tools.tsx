@@ -1,4 +1,9 @@
 'use client';
+/*
+* Rendered when the ncfile is available.
+* used by dashboard/inputjobs/[id]/edit
+* Renders charts and a download feature.
+*/
 import { useState } from 'react';
 import { fetchNCFile } from '@/app/lib/actions';
 import TemperatureChart from '@/app/ui/inputjobs/tempchart'

@@ -1,3 +1,7 @@
+/*
+* Table UI for dashboard/inputjobs/
+*/
+
 import Image from 'next/image';
 import { UpdateInputJob, DeleteInputJob } from '@/app/ui/inputjobs/buttons';
 import InvoiceStatus from '@/app/ui/inputjobs/status';

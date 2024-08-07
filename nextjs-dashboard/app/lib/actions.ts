@@ -1,5 +1,9 @@
 'use server';
-
+/*
+* Actions for creating/managing inputjobs
+* user authentication
+* A place for any server-side functionality.
+*/
 import { z } from 'zod';
 
 // Databse Config
