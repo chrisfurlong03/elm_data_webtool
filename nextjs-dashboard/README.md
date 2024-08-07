@@ -3,7 +3,7 @@
 ### Platform Components
 This was built from the nextjs-dashboard starter template. For more information, see the [course curriculum](https://nextjs.org/learn) on the Next.js Website. 
 
-Hence, this website is built using Next.js (a feature-rich platform for React apps on the web). It is useful to be familiar with Node.js, React, Next.js and Auth.js when developing this project. 
+Hence, this website is built using Next.js (a feature-rich platform for React apps on the web). It is useful to be familiar with Node.js, React, Next.js and Auth.js when developing this project. The course link mentioned above should give a good introduction to some of these concepts while also familiarizing you with the skeleton that this project was built-on.
 
 For data storage this app requires a PostgreSQL database and blob storage. A simple file system could be used instead of blob storage, but blobs have the advantage of built-in security through un-guessable links.
 
