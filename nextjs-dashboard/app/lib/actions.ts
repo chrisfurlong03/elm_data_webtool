@@ -1,18 +1,25 @@
 'use server';
 
 import { z } from 'zod';
+
+// Databse Config
 import { sql } from '@vercel/postgres';
+
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth, signIn, createUser, checkUser } from '@/auth';
 import { AuthError } from 'next-auth';
 import axios from 'axios';
+
+/*
+Used for csv data processing when ORNL function is working
 import { Readable } from 'stream';
 import * as readline from 'readline';
+*/
+
 import { fetchInputJobById } from './data';
 
-// New schema
-
+// InputJob form schema using Zod for validation
 const ELMFormSchema = z.object({
   id: z.string(),
   lat: z.coerce
@@ -86,6 +93,9 @@ export async function updateInputJob(
   redirect('/dashboard/inputjobs');
 }
 
+
+// Deletes the input job from the database, needs to modifed to also delete related blob (if it exists)
+
 export async function deleteInputJob(id: string) {
   try {
     await sql`DELETE FROM inputjobs WHERE id = ${id}`;
@@ -96,8 +106,7 @@ export async function deleteInputJob(id: string) {
   }
 }
 
-
-
+// Takes the sign in for state and authenticates the user
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -117,6 +126,7 @@ export async function authenticate(
   }
 }
 
+// Registers a new users
 export async function register(
   prevState: string | undefined,
   formData: FormData,
@@ -153,6 +163,9 @@ type inputparms = {
   startYear: number;
   endYear: number;
 };
+
+/*
+CURENTLY NOT FUNCTIONAL 
 
 export async function takeORNLInputs(req: inputparms): Promise<any> {
   const { lat, lon, startYear, endYear } = req;
@@ -191,7 +204,9 @@ export async function takeORNLInputs(req: inputparms): Promise<any> {
     }
   }
 }
+*/
 
+// Uses NASA Power API to get met data
 export async function takeInputs(jobId: string, req: any) {
 
   const { lat, lon, startYear, endYear } = req;
@@ -215,6 +230,9 @@ export async function takeInputs(jobId: string, req: any) {
     }
 
 }
+
+/*
+Used by ORNL function, which isn't operational
 
 async function csvToJson(
   stream: Readable,
@@ -251,7 +269,9 @@ async function csvToJson(
 
   return result;
 }
+*/
 
+// Typecast for processed data
 type ProcessedData = {
   [key: string]: number[];
 };
@@ -281,8 +301,10 @@ export async function processData(
   return JSON.stringify(processedData);
 }
 
+
 // inputjobs database actions
 
+// Power API version
 export async function createInputJob(prevState: ELMState, formData: FormData) {
   // Validate form using Zod
   const validatedFields = CreateInputJob.safeParse({
@@ -292,6 +314,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
     enddt: formData.get('enddt'),
     status: formData.get('status'),
   });
+  // Get current user ID
   let session = await auth();
   let user = await checkUser(session?.user?.email as string);
   // If form validation fails, return errors early. Otherwise, continue.
@@ -336,7 +359,7 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
-// ameriflux inputjobs actions
+// Ameriflux inputjob creation
 export async function createInputJobAFlx(
   prevState: ELMState,
   formData: FormData,
@@ -348,6 +371,7 @@ export async function createInputJobAFlx(
     startdt: formData.get('startdt'),
     enddt: formData.get('enddt'),
   });
+  // Get current user ID
   let session = await auth();
   let user = await checkUser(session?.user?.email as string);
   // If form validation fails, return errors early. Otherwise, continue.
@@ -392,13 +416,18 @@ export async function createInputJobAFlx(
   redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
+// For any input job submission
+// ELM/OLMT Server
+// Aflux false by default
 async function processInputJobData(jobId: string, aflux: boolean = false) {
   try {
     const data = await fetchInputJobById(jobId);
     var response;
-    // Make external API call to process data
+    // Make external API call to ELM/OLMT Server (send metdata)
+
     if (aflux) {
        response = await axios.post(
+        // ?aflux param so the server knows to use 48 time steps for aflux data
         'https://seahorse-app-xu2hp.ondigitalocean.app/upload?aflux',
         JSON.parse(data.data),
         {
@@ -407,6 +436,7 @@ async function processInputJobData(jobId: string, aflux: boolean = false) {
       );
     } else {
       response = await axios.post(
+        // The server knows to use 24 time steps for Power API data
         'https://seahorse-app-xu2hp.ondigitalocean.app/upload',
         JSON.parse(data.data),
         {
@@ -415,7 +445,7 @@ async function processInputJobData(jobId: string, aflux: boolean = false) {
       );
     }
 
-
+    // Recieving the metdata nc file in the API response
     if (response.status === 200) {
       const ncFileString = response.data; // Response data is already a string
 
@@ -436,6 +466,8 @@ async function processInputJobData(jobId: string, aflux: boolean = false) {
   }
 }
 
+// Used for downloading the netcdf file to the user from the input job
+// id -> inputjob id in the databse
 export async function fetchNCFile(id: string) {
   try {
     const result = await sql`SELECT ncfile FROM inputjobs WHERE id = ${id}`;
@@ -448,6 +480,8 @@ export async function fetchNCFile(id: string) {
   }
 }
 
+// Only returns the status of the inputjob
+// id -> inputjob id in the databse
 export async function pendingStatus(id:string) {
   try {
     const result = await sql`SELECT status FROM inputjobs WHERE id = ${id}`;
