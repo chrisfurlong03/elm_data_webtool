@@ -36,6 +36,7 @@ const ELMFormSchema = z.object({
       message: 'Longitude must be greater than or equal to -131.0',
     })
     .max(-53.0, { message: 'Longitude must be less than or equal to -53.0' }),
+  site: z.string(),
   startdt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
   enddt: z.coerce.number().gt(0, { message: 'Please enter a year.' }),
   data: z.string(),
@@ -45,8 +46,9 @@ const ELMFormSchema = z.object({
   date: z.string(),
 });
 
-const CreateInputJob = ELMFormSchema.omit({ id: true, date: true, data: true, status: true});
+const CreateInputJob = ELMFormSchema.omit({ id: true, date: true, site: true, data: true, status: true});
 const UpdateInputJob = ELMFormSchema.omit({ id: true, date: true });
+const CreateInputJobAFlx = ELMFormSchema.omit({ id: true, date: true, lat: true, lon: true, data: true, status: true});
 
 export type ELMState = {
   errors?: {
@@ -54,6 +56,7 @@ export type ELMState = {
     lon?: string[];
     startdt?: string[];
     enddt?: string[];
+    site?: string[];
     data?: string[];
     status?: string[];
   };
@@ -345,8 +348,8 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   // Insert data into the database
   try {
     result = await sql`
-      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date, time_step_day)
-      VALUES (${user.id}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', 'pending', ${date}, 24)
+      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, site, status, data, date, time_step_day)
+      VALUES (${user.id}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'none', 'pending', 'pending', ${date}, 24)
       RETURNING id
     `;
     jobId = result.rows[0].id;
@@ -363,15 +366,17 @@ export async function createInputJob(prevState: ELMState, formData: FormData) {
   redirect(`/dashboard/inputjobs/${jobId}/edit`);
 }
 
+
+
+
 // Ameriflux inputjob creation
 export async function createInputJobAFlx(
   prevState: ELMState,
   formData: FormData,
 ) {
   // Validate form using Zod
-  const validatedFields = CreateInputJob.safeParse({
-    lat: formData.get('lat'),
-    lon: formData.get('lon'),
+  const validatedFields = CreateInputJobAFlx.safeParse({
+    site: formData.get('site'),
     startdt: formData.get('startdt'),
     enddt: formData.get('enddt'),
   });
@@ -387,20 +392,29 @@ export async function createInputJobAFlx(
   }
 
   // Prepare data for insertion into the database
-  const { lat, lon, startdt, enddt } = validatedFields.data;
-  const lonAbs = Math.abs(lon) * 100;
-  const latCents = lat * 100;
+  const { site, startdt, enddt } = validatedFields.data;
+  const baseUrl = 'https://seahorse-app-xu2hp.ondigitalocean.app/aflux'; // Replace with your actual API URL
+
+  const response = await axios.get(baseUrl, {
+      params: {
+          site: site,
+          start_year: startdt,
+          end_year: enddt
+      },
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  });
+  const data = response.data
+  
   const date = new Date().toISOString().split('T')[0];
 
-  // Extract JSON file from formData
-  const file = formData.get('data') as File;
-  const data = await file.text();
   var jobId = ""
   // Insert data into the database
   try {
     const result = await sql`
-      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, status, data, date, time_step_day)
-      VALUES (${user.id}, ${latCents}, ${lonAbs}, ${startdt}, ${enddt}, 'pending', ${data}, ${date}, 48)
+      INSERT INTO inputjobs (customer_id, lat, lon, startdt, enddt, site, status, data, date, time_step_day)
+      VALUES (${user.id}, 2200, 5500, ${startdt}, ${enddt}, ${site}, 'pending', ${data}, ${date}, 48)
       RETURNING id
     `;
 
