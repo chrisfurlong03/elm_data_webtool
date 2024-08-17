@@ -23,7 +23,6 @@ import * as readline from 'readline';
 
 import { fetchInputJobById } from './data';
 
-const maxDuration = 60; // This function can run for a maximum of 60 seconds
 
 // InputJob form schema using Zod for validation
 const ELMFormSchema = z.object({
