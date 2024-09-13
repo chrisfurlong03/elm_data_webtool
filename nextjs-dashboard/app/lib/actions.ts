@@ -507,7 +507,7 @@ export async function pendingStatus(id:string) {
   try {
     const result = await sql`SELECT status FROM inputjobs WHERE id = ${id}`;
     console.log(result.rows[0].status);
-    
+    revalidatePath(`/dashboard/inputjobs/${id}/edit`);
     return result.rows[0].status;
   } catch (error) {
     console.error('Database Error:', error);
