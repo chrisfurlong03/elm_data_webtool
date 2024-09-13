@@ -28,6 +28,9 @@ export default function EditInputJobForm({
 
   const fetchStatus = async () => {
     const result = await pendingStatus(inputjob.id);
+    if (status === 'ready') {
+      window.location.reload();
+    };
     setStatus(result);
   };
   useEffect(() => {
