@@ -36,11 +36,10 @@ export default function EditInputJobForm({
     // Set up polling to check for status changes every 10 seconds
     const interval = setInterval(fetchStatus, 3000);
     // Cleanup interval on component unmount
-    if (inputjob.status === 'ready') {
+    if (status === 'ready') {
       clearInterval(interval);
-    } else {
       window.location.reload();
-    }
+    };
   }, []);
   
   
