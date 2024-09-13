@@ -287,8 +287,9 @@ type ProcessedData = {
 export async function processData(
   data: Record<string, any>,
 ): Promise<string> {
-  const outvars = ['TA', 'RH', 'WS', 'PA', 'PPFD_OUT', 'P'];
-  const invars = ['T2M', 'RH2M', 'WS2M', 'PS', 'CLRSKY_SFC_PAR_TOT', 'PRECTOTCORR'];
+  const outvars = ['TA', 'RH', 'WS', 'PA', 'PPFD_OUT', 'H2O'];
+  const invars = ['T2M', 'RH2M', 'WS2M', 'PS', 'ALLSKY_SFC_PAR_TOT', 'PRECTOTCORR'];
+  const conversion = [1, 1, 1, 1/1000, 4.57/3600, 1/(10000*86400)];
 
   const processedData: ProcessedData = {};
 
@@ -298,7 +299,7 @@ export async function processData(
 
     if (data[invar]) {
       processedData[outvar] = Object.values(data[invar]).map(
-        (value: any) => Number(value),
+        (value: any) => Number(value) * conversion[i],
       );
     } else {
       console.warn(`Data for ${invar} is missing`);
