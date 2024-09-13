@@ -475,6 +475,7 @@ async function processInputJobData(jobId: string, aflux: boolean = false) {
         SET ncfile = ${ncFileString}, status = 'ready'
         WHERE id = ${jobId}
       `;
+      revalidatePath(`/dashboard/inputjobs/${jobId}/edit`);
     } else {
       console.error(
         'Failed to download file. Response status:',
