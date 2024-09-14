@@ -219,7 +219,7 @@ export async function takeInputs(jobId: string, req: any) {
 
   const { lat, lon, startYear, endYear } = req;
 
-  const nasaUrl = `https://power.larc.nasa.gov/api/temporal/hourly/point?start=${startYear}0101&end=${endYear}1231&latitude=${lat}&longitude=${lon}&community=re&parameters=T2M%2CRH2M%2CWS2M%2CPS%2CCLRSKY_SFC_PAR_TOT%2CPRECTOTCORR&format=json&header=true&time-standard=lst`;
+  const nasaUrl = `https://power.larc.nasa.gov/api/temporal/hourly/point?start=${startYear}0101&end=${endYear}1231&latitude=${lat}&longitude=${lon}&community=re&parameters=T2M%2CRH2M%2CWS2M%2CPS%2CALLSKY_SFC_PAR_TOT%2CPRECTOTCORR&format=json&header=true&time-standard=lst`;
 
   try {
     const response = await axios.get(nasaUrl);
