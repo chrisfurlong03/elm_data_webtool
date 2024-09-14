@@ -83,12 +83,12 @@ export default function EditInputJobForm({
           {showChart === 'H2O' ? 'Hide H2O Chart' : 'H2O Chart'}
         </Button>
       </div>
-        {showChart === 'TA' && <TemperatureChart data={JSON.parse(inputjob.data).TA} dataLable='TA (temperature, C)' title='TA Over Time in 2016' ytitle='Temperature (TA)' tStepDay={inputjob.time_step_day} />}
-        {showChart === 'RH' && <TemperatureChart data={JSON.parse(inputjob.data).RH} dataLable='RH (relative humidity, %)' title='RH Over Time in 2016' ytitle='Relative Humidity (RH)' tStepDay={inputjob.time_step_day} />}
-        {showChart === 'WS' && <TemperatureChart data={JSON.parse(inputjob.data).WS} dataLable='WS (wind speed, m/s)' title='WS Over Time in 2016' ytitle='Wind Speed (WS)' tStepDay={inputjob.time_step_day} />}
-        {showChart === 'PPFD_OUT' && <TemperatureChart data={JSON.parse(inputjob.data).PPFD_OUT} dataLable='PPFD_OUT (outgoing PPFD, µmol Photon/m^2/s)' title='PPFD_OUT Over Time in 2016' ytitle='Outgoing Radiation (PPFD)' tStepDay={inputjob.time_step_day} />}
-        {showChart === 'H2O' && <TemperatureChart data={JSON.parse(inputjob.data).P} dataLable='P (precipitation, kg/m^2/s)' title='P Over Time in 2016' ytitle='Precipitation (P)' tStepDay={inputjob.time_step_day} />}     
-        {showChart === 'PA' && <TemperatureChart data={JSON.parse(inputjob.data).PA} dataLable='PA (pressure, Pa)' title='PA Over Time in 2016' ytitle='Pressure (PA)' tStepDay={inputjob.time_step_day} />}  
+        {showChart === 'TA' && <TemperatureChart data={JSON.parse(inputjob.data).TA} dataLable='TA (temperature, C)' title='TA Over Time' ytitle='Temperature (TA)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'RH' && <TemperatureChart data={JSON.parse(inputjob.data).RH} dataLable='RH (relative humidity, %)' title='RH Over Time' ytitle='Relative Humidity (RH)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'WS' && <TemperatureChart data={JSON.parse(inputjob.data).WS} dataLable='WS (wind speed, m/s)' title='WS Over Time' ytitle='Wind Speed (WS)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'PPFD_OUT' && <TemperatureChart data={JSON.parse(inputjob.data).PPFD_OUT} dataLable='PPFD_OUT (outgoing PPFD, µmol Photon/m^2/s)' title='PPFD_OUT' ytitle='Outgoing Radiation (PPFD)' tStepDay={inputjob.time_step_day} />}
+        {showChart === 'H2O' && <TemperatureChart data={JSON.parse(inputjob.data).H2O} dataLable='Precipitation (precipitation, kg/m^2/s)' title='Precipitation' ytitle='Precipitation (H2O)' tStepDay={inputjob.time_step_day} />}     
+        {showChart === 'PA' && <TemperatureChart data={JSON.parse(inputjob.data).PA} dataLable='PA (pressure, Pa)' title='PA Over Time' ytitle='Pressure (PA)' tStepDay={inputjob.time_step_day} />}  
     </div>
           <div className="rounded-md bg-gray-50 p-4 mt-4 md:p-6">
           <Button

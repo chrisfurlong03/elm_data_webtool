@@ -289,7 +289,7 @@ export async function processData(
 ): Promise<string> {
   const outvars = ['TA', 'RH', 'WS', 'PA', 'PPFD_OUT', 'H2O'];
   const invars = ['T2M', 'RH2M', 'WS2M', 'PS', 'CLRSKY_SFC_PAR_TOT', 'PRECTOTCORR'];
-  const conversion = [1, 1, 1, 1/1000, 4.57/3600, 1];
+  const conversion = [1, 1, 1, 1/1000, 4.57/3600, 1/86400];
 
   const processedData: ProcessedData = {};
 
