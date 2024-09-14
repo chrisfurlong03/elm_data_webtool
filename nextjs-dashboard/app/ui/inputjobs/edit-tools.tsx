@@ -78,9 +78,9 @@ export default function EditInputJobForm({
         <Button
           type="button"
           className="mt-4 rounded-md bg-lime-500 py-2 px-4"
-          onClick={() => {showChart != 'P' ? setShowChart('P') :  setShowChart(null)}}
+          onClick={() => {showChart != 'H2O' ? setShowChart('H2O') :  setShowChart(null)}}
         >
-          {showChart === 'P' ? 'Hide P Chart' : 'P Chart'}
+          {showChart === 'H2O' ? 'Hide H2O Chart' : 'H2O Chart'}
         </Button>
       </div>
         {showChart === 'TA' && <TemperatureChart data={JSON.parse(inputjob.data).TA} dataLable='TA (temperature, C)' title='TA Over Time in 2016' ytitle='Temperature (TA)' tStepDay={inputjob.time_step_day} />}
